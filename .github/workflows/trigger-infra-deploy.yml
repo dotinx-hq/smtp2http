@@ -1,0 +1,50 @@
+name: Trigger Infrastructure Deployment
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to deploy to infrastructure (e.g., v1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  trigger-deployment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Trigger infrastructure deployment
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.INFRA_DEPLOY_TOKEN }}
+          repository: dotinx-hq/infra
+          event-type: deploy-smtp2http
+          client-payload: |
+            {
+              "version": "${{ steps.version.outputs.version }}",
+              "triggered_by": "${{ github.actor }}",
+              "workflow_run_id": "${{ github.run_id }}"
+            }
+
+      - name: Summary
+        run: |
+          echo "## Deployment Triggered" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: dotinx-hq/infra" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: @${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The infrastructure repository will now update smtp2http to version ${{ steps.version.outputs.version }}" >> $GITHUB_STEP_SUMMARY

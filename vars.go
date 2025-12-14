@@ -1,8 +1,17 @@
 package main
 
-import "flag"
+import (
+	"flag"
+	"fmt"
+)
 
 var (
+	// Build-time variables (set via ldflags)
+	Version   = "dev"
+	BuildDate = "unknown"
+	GitCommit = "unknown"
+
+	// Flags
 	flagServerName     = flag.String("name", "smtp2http", "the server name")
 	flagListenAddr     = flag.String("listen", ":smtp", "the smtp address to listen on")
 	flagWebhook        = flag.String("webhook", "http://localhost:8080/my/webhook", "the webhook to send the data to")
@@ -12,8 +21,16 @@ var (
 	flagAuthUSER       = flag.String("user", "", "user for smtp client")
 	flagAuthPASS       = flag.String("pass", "", "pass for smtp client")
 	flagDomain         = flag.String("domain", "", "domain for recieving mails")
+	flagVersion        = flag.Bool("version", false, "show version information")
 )
 
 func init() {
 	flag.Parse()
+
+	if *flagVersion {
+		fmt.Printf("smtp2http %s\n", Version)
+		fmt.Printf("Build Date: %s\n", BuildDate)
+		fmt.Printf("Git Commit: %s\n", GitCommit)
+		fmt.Println()
+	}
 }
